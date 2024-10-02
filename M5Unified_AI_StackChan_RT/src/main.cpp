@@ -19,7 +19,11 @@
 #include "rootCAgoogle.h"
 #include <ArduinoJson.h>
 #include <ESP32WebServer.h>
-// #include <ESPmDNS.h>
+#define ENABLE_MDNS
+#ifdef ENABLE_MDNS
+#define MDNS_HOST "stack-chan"
+#include <ESPmDNS.h>
+#endif
 #include <deque>
 #include "AudioWhisper.h"
 #include "Whisper.h"
@@ -987,7 +991,7 @@ void setup()
   { /// custom setting
     auto spk_cfg = M5.Speaker.config();
     /// Increasing the sample_rate will improve the sound quality instead of increasing the CPU load.
-    spk_cfg.sample_rate = 96000; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
+    spk_cfg.sample_rate = 44100; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
     spk_cfg.task_pinned_core = APP_CPU_NUM;
     M5.Speaker.config(spk_cfg);
   }
@@ -1159,15 +1163,27 @@ void setup()
   M5.Lcd.print("Connecting");
   Wifi_setup();
   M5.Lcd.println("\nConnected");
+
+#ifdef ENABLE_MDNS
+  if (MDNS.begin(MDNS_HOST))
+  {
+    Serial.println("MDNS responder started");
+    M5.Lcd.println("MDNS responder started");
+  }
+#endif
+
   Serial.printf_P(PSTR("Go to http://"));
   M5.Lcd.print("Go to http://");
   Serial.println(WiFi.localIP());
   M5.Lcd.println(WiFi.localIP());
 
-  // if (MDNS.begin("m5stack")) {
-  //   Serial.println("MDNS responder started");
-  //   M5.Lcd.println("MDNS responder started");
-  // }
+#ifdef ENABLE_MDNS
+  Serial.printf_P(PSTR("or http://%s.local"), PSTR(MDNS_HOST));
+  Serial.println();
+  M5.Lcd.printf("or http://%s.local", MDNS_HOST);
+  M5.Lcd.println();
+#endif
+
   delay(1000);
 
   server.on("/", handleRoot);
@@ -1233,8 +1249,8 @@ void setup()
   wakeword_init();
 #endif
   avatar.init();
-  avatar.addTask(lipSync, "lipSync");
-  avatar.addTask(servo, "servo");
+  avatar.addTask(lipSync, "lipSync", 2048U, 1U);
+  avatar.addTask(servo, "servo", 2048U, 0U);
   avatar.setSpeechFont(&fonts::efontJA_16);
 
 //  M5.Speaker.setVolume(200);
