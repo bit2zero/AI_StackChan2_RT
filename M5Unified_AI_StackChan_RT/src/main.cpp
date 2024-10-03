@@ -772,6 +772,13 @@ void lipSync(void *args)
       level = 15000;
     }
     float open = (float)level / 15000.0;
+
+    if (open > 0.01)
+    {
+      servo(ID_Y, START_DEGREE_VALUE_Y + open * 30.0);
+      delay(100);
+    }
+
     avatar->setMouthOpenRatio(open);
     avatar->getGaze(&gazeY, &gazeX);
     avatar->setRotation(gazeX * 5);
